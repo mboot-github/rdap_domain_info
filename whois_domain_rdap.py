@@ -37,17 +37,22 @@ def get_domains():
 def xmain():
     domains = get_domains()
     for domain in domains:
-        rdc = rdap_domain_converter.RdapDomainConverter(domain, ssl_verify=False, timeout=30)
-
-        have_data: bool = rdc.get_response()
-        if have_data is False:
-            print(f"no data for domain: {domain}")
-            continue
-
+        rdc = rdap_domain_converter.RdapDomainConverter(
+            domain,
+            ssl_verify=False,
+            timeout=30,
+        )
+        rdc.get_response()
         rdc.parse_data()
         print(json.dumps(rdc.result, indent=2))
 
-        pathlib.Path(f"tmp/{domain}.json").write_text(json.dumps(rdc.data, indent=2), encoding="utf8")
+        pathlib.Path(f"tmp/{domain}.json").write_text(
+            json.dumps(
+                rdc.data,
+                indent=2,
+            ),
+            encoding="utf8",
+        )
 
 
 xmain()

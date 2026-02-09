@@ -51,6 +51,8 @@ class RdapDomainConverter:
 
     def set_default_result(self):
         self.result: dict = {
+            "server": "",
+            "data": False,
             "request": self.domain,
             "domain": "",
             "status": [],
@@ -68,7 +70,7 @@ class RdapDomainConverter:
             server = server.removesuffix("/")
             self.server = server
         else:
-            print(f"no server found for {self.domain}")
+            logger.warning(f"no server found for {self.domain}")
             self.server = None
 
     def get_response(self) -> bool:
@@ -277,7 +279,7 @@ class RdapDomainConverter:
 
         if len(props) == 1:
             if what == "adr" and "cc" in props:
-                value["country_code"] = props["cc"]
+                value["country code"] = props["cc"]
                 props = ""
             else:
                 props = self.flatten_props_if(props)
@@ -304,7 +306,7 @@ class RdapDomainConverter:
         if k in data:
             return self.do_vcard(data[k][1])
 
-        return None
+        return {}
 
     def do_redacted(self):
         k = "redacted"
@@ -340,9 +342,14 @@ class RdapDomainConverter:
 
     def parse_data(self):
         if not self.server:
+            self.result["server"] = ""
             return
+        self.result["server"] = self.server
+
         if self.data == {}:
+            self.result["data"] = False
             return
+        self.result["data"] = True
 
         if "secureDNS" in self.data:
             self.result["secureDNS"] = self.data["secureDNS"]["delegationSigned"]
@@ -370,8 +377,9 @@ class RdapDomainConverter:
         for k in ll:
             self.get_roledata(k, self.get_role_start(k))
 
-        k = "publicIds"
+        # additional data under registrar
         rr = self.get_role_start("registrar")
+        k = "publicIds"
         if k in rr:
             for item in rr[k]:
                 self.result["registrar"][item["type"]] = item["identifier"]

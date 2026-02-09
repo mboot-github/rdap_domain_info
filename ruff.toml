@@ -19,13 +19,13 @@ exclude = [
     ".svn",
     ".tox",
     ".venv",
+    "venv",
     "__pypackages__",
     "_build",
     "buck-out",
     "build",
     "dist",
     "node_modules",
-    "venv",
 ]
 
 [lint]
@@ -113,10 +113,9 @@ fixable = ["ALL"]
 [lint.per-file-ignores]
 
 [lint.flake8-boolean-trap]
-    extend-allowed-calls = ["dojo.utils.get_system_setting"]
 
 [lint.pylint]
     max-statements = 234
 
 [lint.mccabe]
-    max-complexity = 70  # value is far from perfect (recommended default is 10). But we will try to decrease it over the time.
+    max-complexity = 20  # value is far from perfect (recommended default is 10). But we will try to decrease it over the time.
