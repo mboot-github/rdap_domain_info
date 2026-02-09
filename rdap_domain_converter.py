@@ -186,11 +186,15 @@ class RdapDomainConverter:
     def get_roledata(self, name: str, data):
         r = {}
         self.result[name] = r
-        r["roles"] = self.get_role_info(data)
+
+        info = self.get_role_info(data)
+        if len(info) != 0:
+            r["roles"] = info
         r["vcard"] = self.get_vcard(data)
 
     def vcard_adr(self, data):
         """
+        7 fields
         "Mail Stop 3",   // post office box (not recommended for use)
         "Suite 3000",    // apartment or suite (not recommended for use)
         "123 Maple Ave", // street address
@@ -202,10 +206,10 @@ class RdapDomainConverter:
         names = [
             "po_box",
             "suite",
-            "street",
+            "street",  # can be list
             "locality",
             "region",
-            "postcode",
+            "postal code",
             "country",
         ]
         if isinstance(data, list):
@@ -214,7 +218,12 @@ class RdapDomainConverter:
                 rrr = {}
                 for k, v in rr.items():
                     if v:
-                        rrr[k] = v
+                        if isinstance(v, str):
+                            rrr[k] = v
+                        if isinstance(v, list):
+                            rrr[k] = "; ".join(v)
+                            if rrr[k] == "; ; ":  # remove empty items
+                                rrr[k] = ""
                 return rrr
         return data
 
@@ -225,22 +234,21 @@ class RdapDomainConverter:
         return value
 
     def flatten_props_if(self, props):
-        if len(props) != 1:  # flatten props
-            return props
-
-        if "cc" in props:
-            return f"country_code: {props['cc']}"
-
         try:
             v = list(props.values())
-            # print(v, file=sys.stderr)
             if isinstance(v, str):
                 return v
 
+            # print(v, file=sys.stderr)
             if len(v) == 1:
-                return v[0]
+                k = v[0]
+                if isinstance(k, str):
+                    return k
+                if len(k) == 1:
+                    return k[0]
 
             return ",".join(v)
+
         except Exception as e:
             msg = f"{self.domain} {props}::{e}"
             logger.warning(msg)
@@ -266,7 +274,13 @@ class RdapDomainConverter:
             what = "full_name"
 
         value = self.fix_if_adr(what, value)
-        props = self.flatten_props_if(props)
+
+        if len(props) == 1:
+            if what == "adr" and "cc" in props:
+                value["country_code"] = props["cc"]
+                props = ""
+            else:
+                props = self.flatten_props_if(props)
 
         if itype not in {"text", "uri"}:  # text and uri types are self evident
             if len(props):
